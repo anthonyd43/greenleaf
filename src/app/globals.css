@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* light theme */
+  --bg-page: #f6f7f9;
+  --bg-card: #ffffff;
+  --bg-raised: #eef0f3;
+  --line: rgba(15, 23, 42, 0.08);
+  --ink: #0f172a;
+  --ink-2: #5b6472;
+  --accent: #16a34a;
+  --accent-strong: #15803d;
+  --glow: 0 0 24px rgba(22, 163, 74, 0.25);
+  --danger: #dc2626;
+  --warning: #d97706;
+  --info: #0284c7;
+  /* categorical chart palette — dataviz-validated LIGHT steps (do not edit) */
+  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
+  --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #4a3aa7;
+  --chart-muted: #cbd5e1;
+}
+
+.dark {
+  --bg-page: #16181d;
+  --bg-card: #1e2127;
+  --bg-raised: #262a31;
+  --line: rgba(255, 255, 255, 0.06);
+  --ink: #f2f4f7;
+  --ink-2: #9aa1ac;
+  --accent: #22c55e;
+  --accent-strong: #16a34a;
+  --glow: 0 0 24px rgba(34, 197, 94, 0.35);
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --info: #38bdf8;
+  /* categorical chart palette — dataviz-validated DARK steps (do not edit) */
+  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
+  --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9;
+  --chart-muted: #3a4048;
+}
+
+@theme inline {
+  --color-page: var(--bg-page);
+  --color-card: var(--bg-card);
+  --color-raised: var(--bg-raised);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --shadow-glow: var(--glow);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--ink);
+}
+
+:where(button, a, select, input, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
