@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "greenleaf",
+  title: "Greenleaf",
   description: "Household utility bill splitting",
 };
 
