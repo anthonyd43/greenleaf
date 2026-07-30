@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { LeafLogo } from '@/components/ui/leaf-logo'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, ReceiptText, Layers, CalendarDays, Settings, LogOut } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -25,7 +26,7 @@ export function Sidebar({ signOutAction }: { signOutAction: () => Promise<void> 
       {/* Desktop rail */}
       <aside className="hidden md:flex sticky top-0 w-56 h-dvh flex-col gap-1 border-r border-line bg-card p-4">
         <div className="mb-4 flex items-center gap-2 px-3 font-bold text-ink">
-          <span className="text-accent">🌿</span> Greenleaf
+          <LeafLogo size={22} /> Greenleaf
         </div>
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href)
