@@ -6,11 +6,9 @@ import { Card } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { UsagePeriodInput } from '@/components/ui/usage-period-input'
 import { rangeIsCalendarMonth } from '@/lib/usage-period'
+import { fieldClass, labelClass, pillSolid } from '@/components/ui/classes'
 
 export const dynamic = 'force-dynamic'
-
-const fieldClass = 'rounded-lg border border-line bg-card px-3 py-2 text-sm'
-const labelClass = 'text-xs text-ink-2'
 
 export default async function EditBillPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -28,14 +26,14 @@ export default async function EditBillPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Edit bill" />
+      <PageHeader title="Edit bill" sub={cycle?.label} />
 
       {!cycle || cycle.status !== 'open' ? (
         <Card>
-          <p className="text-sm text-warning">
+          <p className="text-sm text-ink-2">
             This bill&apos;s cycle is finalized — reopen it to edit.{' '}
             {cycle && (
-              <Link href={`/cycles/${cycle.id}`} className="underline">
+              <Link href={`/cycles/${cycle.id}`} className="text-accent underline">
                 View cycle →
               </Link>
             )}
@@ -100,7 +98,7 @@ export default async function EditBillPage({ params }: { params: Promise<{ id: s
               Force even split
             </label>
 
-            <button className="col-span-2 rounded-lg bg-accent px-3 py-2 text-sm text-white shadow-glow">
+            <button className={`col-span-2 ${pillSolid}`}>
               Save changes
             </button>
           </form>
@@ -108,7 +106,7 @@ export default async function EditBillPage({ params }: { params: Promise<{ id: s
       )}
 
       <p>
-        <Link href="/bills" className="text-sm text-accent hover:underline">
+        <Link href="/bills" className="text-[13px] text-ink-2 hover:text-accent transition-colors duration-150">
           Cancel — back to Bills
         </Link>
       </p>
