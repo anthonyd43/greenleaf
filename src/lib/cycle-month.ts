@@ -3,11 +3,12 @@ const MONTHS = [
   'july', 'august', 'september', 'october', 'november', 'december',
 ]
 
-/** '"July 2026"' → '2026-07'; null when the label is not a "<Month> <Year>" string. */
+/** '"July 2026"' or '"Jul 2026"' → '2026-07'; null when the label is not a "<Month> <Year>" string. */
 export function labelToMonth(label: string): string | null {
   const m = /^([A-Za-z]+)\s+(\d{4})$/.exec(label.trim())
   if (!m) return null
-  const idx = MONTHS.indexOf(m[1].toLowerCase())
+  const name = m[1].toLowerCase()
+  const idx = MONTHS.findIndex(full => full === name || full.slice(0, 3) === name)
   if (idx === -1) return null
   return `${m[2]}-${String(idx + 1).padStart(2, '0')}`
 }

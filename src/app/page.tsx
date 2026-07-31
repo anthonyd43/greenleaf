@@ -116,11 +116,13 @@ export default async function Dashboard() {
 
           {/* Quick actions */}
           <div className="flex flex-wrap gap-3">
-            {quickActions(open?.id ?? null).map(({ href, label, icon: Icon }) => (
+            {quickActions(open?.id ?? null).map(({ href, label, icon: Icon }, i) => (
               <Link
                 key={label}
                 href={href}
-                className="flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl border border-line bg-card px-5 py-4 transition-colors duration-150 hover:border-accent/40"
+                className={`flex min-w-[140px] flex-1 items-center gap-3 rounded-2xl border border-line bg-card px-5 py-4 transition-colors duration-150 hover:border-accent/40 ${
+                  i === 0 ? 'max-rail:basis-full' : ''
+                }`}
               >
                 <Icon size={18} strokeWidth={2} className="text-accent" />
                 <span className="text-sm font-medium text-ink">{label}</span>

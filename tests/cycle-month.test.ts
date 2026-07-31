@@ -6,6 +6,11 @@ describe('labelToMonth', () => {
     expect(labelToMonth('July 2026')).toBe('2026-07')
     expect(labelToMonth('january 2025')).toBe('2025-01')
   })
+  it('parses abbreviated month labels like "Jul 2026"', () => {
+    expect(labelToMonth('Jul 2026')).toBe('2026-07')
+    expect(labelToMonth('sep 2025')).toBe('2025-09')
+    expect(labelToMonth('Dec 2026')).toBe('2026-12')
+  })
   it('returns null for unparseable labels', () => {
     expect(labelToMonth('Cycle 14')).toBeNull()
     expect(labelToMonth('Notamonth 2026')).toBeNull()
