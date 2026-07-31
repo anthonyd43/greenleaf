@@ -1,19 +1,21 @@
-export type BadgeVariant = 'open' | 'finalized' | 'requested' | 'settled' | 'paid' | 'pending' | 'neutral';
+export type BadgeVariant = 'open' | 'finalized' | 'requested' | 'settled' | 'paid' | 'pending' | 'neutral'
 
 const variantStyles: Record<BadgeVariant, string> = {
-  open: 'text-accent bg-accent/10',
-  finalized: 'text-info bg-info/10',
-  requested: 'text-warning bg-warning/10',
-  settled: 'text-accent bg-accent/10',
-  paid: 'text-accent bg-accent/10',
-  pending: 'text-ink-2 bg-raised',
-  neutral: 'text-ink-2 bg-raised',
-};
+  open: 'border border-mint/60 text-mint',
+  finalized: 'border border-ink-3/50 text-ink-2',
+  settled: 'border border-ink-3/50 text-ink-2',
+  paid: 'border border-accent/50 bg-accent/10 text-accent',
+  requested: 'border border-accent/40 text-accent',
+  pending: 'border border-ink-3/50 text-ink-2',
+  neutral: 'border border-line text-ink-2',
+}
 
 export function Badge({ variant, children }: { variant: BadgeVariant; children: React.ReactNode }) {
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${variantStyles[variant]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${variantStyles[variant]}`}
+    >
       {children}
     </span>
-  );
+  )
 }

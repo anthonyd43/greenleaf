@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { listMonthDays, type AbsRange } from '@/lib/absence-month'
+import { Avatar } from '@/components/ui/avatar'
+import { pillOutline, pillSolid, fieldClass } from '@/components/ui/classes'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 type Housemate = { id: number; name: string }
 type Absence = { id: number; housemateId: number; startDate: string; endDate: string }
@@ -55,22 +57,20 @@ function currentMonth(): string {
   return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
 }
 
-function dayCellClass(isSelected: boolean, isPendingAdd: boolean, isPendingRemove: boolean): string {
-  const base = 'flex h-9 w-full items-center justify-center rounded-lg text-sm transition-colors'
-  const fill = isSelected ? 'bg-accent text-white' : 'text-ink hover:bg-raised'
-  const ring = isPendingAdd ? 'ring-2 ring-accent' : isPendingRemove ? 'ring-2 ring-danger' : ''
-  return [base, fill, ring].filter(Boolean).join(' ')
+function dayCellClass(isSelected: boolean, isPending: boolean, isToday: boolean): string {
+  const base =
+    'flex h-11 w-full items-center justify-center rounded-xl text-sm transition-colors duration-150'
+  const fill = isSelected ? 'bg-mint font-semibold text-mint-ink' : 'text-ink hover:bg-raised'
+  const ring = isPending ? 'ring-2 ring-accent' : ''
+  const today = !isSelected && isToday ? 'outline outline-1 outline-ink-3/50' : ''
+  return [base, fill, ring, today].filter(Boolean).join(' ')
 }
 
 /** Submit button — must be a descendant of the <form>; useFormStatus reads the nearest one. */
 function SaveButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={disabled || pending}
-      className="rounded-lg bg-accent px-4 py-2 text-sm text-white shadow-glow disabled:opacity-50"
-    >
+    <button type="submit" disabled={disabled || pending} className={pillSolid}>
       {pending ? 'Saving…' : 'Save'}
     </button>
   )
@@ -78,17 +78,20 @@ function SaveButton({ disabled }: { disabled: boolean }) {
 
 function MonthGrid({
   housemateId,
+  housemateName,
   month,
   rangesForHousemate,
   action,
   onDirtyChange,
 }: {
   housemateId: number
+  housemateName: string
   month: string
   rangesForHousemate: AbsRange[]
   action: (formData: FormData) => void
   onDirtyChange: (dirty: boolean) => void
 }) {
+  const todayIso = new Date().toISOString().slice(0, 10)
   const initialDays = useMemo(() => listMonthDays(rangesForHousemate, month), [rangesForHousemate, month])
   const [selectedDays, setSelectedDays] = useState<Set<string>>(() => new Set(initialDays))
   const [note, setNote] = useState('')
@@ -135,15 +138,16 @@ function MonthGrid({
       <input type="hidden" name="month" value={month} readOnly />
       <input type="hidden" name="days" value={daysJson} readOnly />
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-ink-2">
+      <div className="grid grid-cols-7 gap-1 text-center">
         {WEEKDAYS.map(w => (
-          <div key={w} className="py-1 font-medium">{w}</div>
+          <div key={w} className="py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-2">
+            {w}
+          </div>
         ))}
         {grid.map((iso, i) => {
           if (!iso) return <div key={i} />
           const isSelected = selectedDays.has(iso)
-          const isPendingAdd = pendingAdds.has(iso)
-          const isPendingRemove = pendingRemoves.has(iso)
+          const isPending = pendingAdds.has(iso) || pendingRemoves.has(iso)
           const day = Number(iso.slice(-2))
           return (
             <button
@@ -152,7 +156,7 @@ function MonthGrid({
               onClick={() => toggleDay(iso)}
               aria-pressed={isSelected}
               aria-label={iso}
-              className={dayCellClass(isSelected, isPendingAdd, isPendingRemove)}
+              className={dayCellClass(isSelected, isPending, iso === todayIso)}
             >
               {day}
             </button>
@@ -160,23 +164,27 @@ function MonthGrid({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex flex-1 min-w-[10rem] flex-col gap-1">
-          <span className="text-xs text-ink-2">Note (applied to newly added days)</span>
-          <input
-            name="note"
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder="e.g. vacation"
-            className="rounded-lg border border-line bg-card px-3 py-2 text-sm"
-          />
-        </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-xs text-ink-2">Note (applied to newly added days)</span>
+        <input
+          name="note"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="e.g. vacation"
+          className={fieldClass}
+        />
+      </label>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-ink-3">
+          Tap a day to toggle it · {housemateName.split(' ')[0]} · {selectedDays.size} days away in {monthLabel(month)}
+        </p>
         <div className="flex items-center gap-2">
           {dirty && (
             <span className="text-xs text-ink-2">{changeCount} unsaved change{changeCount === 1 ? '' : 's'}</span>
           )}
           {dirty && (
-            <button type="button" onClick={reset} className="rounded-lg border border-line px-3 py-2 text-sm text-ink-2">
+            <button type="button" onClick={reset} className={pillOutline}>
               Reset
             </button>
           )}
@@ -215,19 +223,27 @@ export function AbsenceCalendar({
     return <p className="text-sm text-ink-2">Add a housemate first.</p>
   }
 
+  const selectedHousemate = housemates.find(h => h.id === housemateId)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <select
-          value={housemateId}
-          disabled={dirty}
-          onChange={e => setHousemateId(Number(e.target.value))}
-          className="rounded-lg border border-line bg-card px-3 py-2 text-sm disabled:opacity-50"
-        >
+        <div className="flex flex-wrap items-center gap-2">
           {housemates.map(h => (
-            <option key={h.id} value={h.id}>{h.name}</option>
+            <button
+              key={h.id}
+              type="button"
+              disabled={dirty}
+              onClick={() => setHousemateId(h.id)}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50 ${
+                h.id === housemateId ? 'border-accent/40 bg-accent/10 text-ink' : 'border-line text-ink-2 hover:text-ink'
+              }`}
+            >
+              <Avatar name={h.name} size={22} />
+              {h.name.split(' ')[0]}
+            </button>
           ))}
-        </select>
+        </div>
 
         <div className="flex items-center gap-2">
           <button
@@ -235,28 +251,29 @@ export function AbsenceCalendar({
             disabled={dirty}
             onClick={() => setMonth(m => shiftMonth(m, -1))}
             aria-label="Previous month"
-            className="rounded-lg border border-line px-2 py-1 text-sm disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-colors duration-150 hover:bg-raised hover:text-ink disabled:opacity-40"
           >
             ‹
           </button>
-          <span className="min-w-[8rem] text-center text-sm font-medium text-ink">{monthLabel(month)}</span>
+          <span className="min-w-[8rem] text-center text-sm font-semibold text-ink">{monthLabel(month)}</span>
           <button
             type="button"
             disabled={dirty}
             onClick={() => setMonth(m => shiftMonth(m, 1))}
             aria-label="Next month"
-            className="rounded-lg border border-line px-2 py-1 text-sm disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-colors duration-150 hover:bg-raised hover:text-ink disabled:opacity-40"
           >
             ›
           </button>
         </div>
       </div>
 
-      {dirty && <p className="text-xs text-warning">Save or reset first — housemate and month are locked while you have unsaved changes.</p>}
+      {dirty && <p className="text-xs text-ink-2">Save or reset first — housemate and month are locked while you have unsaved changes.</p>}
 
       <MonthGrid
         key={gridKey}
         housemateId={housemateId}
+        housemateName={selectedHousemate?.name ?? ''}
         month={month}
         rangesForHousemate={rangesForHousemate}
         action={action}

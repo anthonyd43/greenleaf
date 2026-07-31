@@ -1,86 +1,113 @@
+import { Info, Trash2 } from 'lucide-react'
 import { createAbsence, deleteAbsence, saveAbsenceMonth } from '@/lib/actions/absences'
 import { listAbsences, listHousemates } from '@/lib/queries'
 import { Card, CardHeader } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
+import { Avatar } from '@/components/ui/avatar'
 import { AbsenceCalendar } from '@/components/absence-calendar'
+import { fieldClass, ghostIconDanger, labelClass, pillSolid } from '@/components/ui/classes'
 
 export const dynamic = 'force-dynamic'
 
-const fieldClass = 'rounded-lg border border-line bg-card px-3 py-2 text-sm'
+function tripDays(start: string, end: string): number {
+  return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000) + 1
+}
 
 export default async function AbsencesPage() {
   const [rows, mates] = await Promise.all([listAbsences(), listHousemates()])
   return (
-    <div className="space-y-6">
-      <PageHeader title="Absences" />
-      <p className="text-sm text-ink-2">
-        Log time away from the house — usage-based utilities (gas, electricity, water) prorate by days home.
-      </p>
+    <div className="mx-auto max-w-[1040px] space-y-5">
+      <PageHeader
+        title="Absences"
+        sub="Usage-based utilities (gas, electricity, water) prorate by days home"
+      />
 
-      <Card>
-        <CardHeader title="Absence calendar" />
-        <p className="mb-3 text-xs text-ink-2">Tap days you were away — weekends take two taps, not a form each.</p>
-        <AbsenceCalendar
-          housemates={mates.map(m => ({ id: m.id, name: m.name }))}
-          absences={rows.map(({ absence }) => ({
-            id: absence.id,
-            housemateId: absence.housemateId,
-            startDate: absence.startDate,
-            endDate: absence.endDate,
-          }))}
-          action={saveAbsenceMonth}
-        />
-      </Card>
+      <div className="flex items-center gap-3 rounded-[14px] border border-accent/25 bg-accent/10 px-4 py-3">
+        <Info size={16} className="shrink-0 text-accent" />
+        <p className="text-[13px] text-ink-2">
+          Calendar taps and Add-a-trip are two ways into the same absence data — use whichever fits.
+        </p>
+      </div>
 
-      <Card>
-        <CardHeader title="Add a longer trip" />
-        <form action={createAbsence} className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-ink-2">Housemate</span>
-            <select name="housemateId" className={fieldClass} required>
-              {mates.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-ink-2">Start date</span>
-            <input name="startDate" type="date" className={fieldClass} required />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-ink-2">End date</span>
-            <input name="endDate" type="date" className={fieldClass} required />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-ink-2">Note</span>
-            <input name="note" placeholder="e.g. vacation" className={fieldClass} />
-          </label>
-          <button className="col-span-2 rounded-lg bg-accent px-4 py-2 text-sm text-white shadow-glow md:col-span-1">
-            Add
-          </button>
-        </form>
-      </Card>
+      <div className="flex flex-col gap-5 rail:flex-row">
+        <Card className="min-w-0 flex-[1.5]">
+          <CardHeader title="Absence calendar" />
+          <AbsenceCalendar
+            housemates={mates.map(m => ({ id: m.id, name: m.name }))}
+            absences={rows.map(({ absence }) => ({
+              id: absence.id,
+              housemateId: absence.housemateId,
+              startDate: absence.startDate,
+              endDate: absence.endDate,
+            }))}
+            action={saveAbsenceMonth}
+          />
+        </Card>
 
-      <Card className="p-0">
-        <div className="divide-y divide-line">
-          {rows.map(({ absence, housemate }) => (
-            <div key={absence.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-raised text-sm font-semibold text-ink">
-                {housemate.name[0]?.toUpperCase() ?? '?'}
+        <div className="w-full space-y-5 rail:w-[340px] rail:shrink-0">
+          <Card>
+            <CardHeader title="Add a trip" />
+            <p className="-mt-2 mb-3 text-xs text-ink-3">
+              A whole date range at once — shows up on the calendar too
+            </p>
+            <form action={createAbsence} className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1">
+                <span className={labelClass}>Housemate</span>
+                <select name="housemateId" className={fieldClass} required>
+                  {mates.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className={labelClass}>Start date</span>
+                  <input name="startDate" type="date" className={fieldClass} required />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className={labelClass}>End date</span>
+                  <input name="endDate" type="date" className={fieldClass} required />
+                </label>
               </div>
-              <span className="text-sm text-ink">{housemate.name}</span>
-              <span className="rounded-full bg-raised px-2.5 py-0.5 text-xs tabular-nums text-ink-2">
-                {absence.startDate} → {absence.endDate}
-              </span>
-              {absence.note && <span className="min-w-0 max-w-full truncate text-sm text-ink-2">{absence.note}</span>}
-              <form action={deleteAbsence} className="ml-auto">
-                <input type="hidden" name="id" value={absence.id} />
-                <button className="text-xs text-danger">delete</button>
-              </form>
-            </div>
-          ))}
+              <label className="flex flex-col gap-1">
+                <span className={labelClass}>Note</span>
+                <input name="note" placeholder="e.g. work travel" className={fieldClass} />
+              </label>
+              <button className={`${pillSolid} w-full`}>Add</button>
+            </form>
+          </Card>
+
+          <Card>
+            <CardHeader title="Logged trips" />
+            {rows.length === 0 ? (
+              <p className="text-sm text-ink-2">No trips logged.</p>
+            ) : (
+              <div className="space-y-2">
+                {rows.map(({ absence, housemate }) => (
+                  <div key={absence.id} className="flex items-center gap-3 rounded-[14px] bg-raised-2 px-3.5 py-2.5">
+                    <Avatar name={housemate.name} size={30} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-medium text-ink">
+                        {housemate.name.split(' ')[0]} · {tripDays(absence.startDate, absence.endDate)} days
+                      </div>
+                      <div className="truncate text-xs text-ink-2">
+                        {absence.startDate} – {absence.endDate}
+                        {absence.note ? ` · ${absence.note}` : ''}
+                      </div>
+                    </div>
+                    <form action={deleteAbsence}>
+                      <input type="hidden" name="id" value={absence.id} />
+                      <button aria-label="Delete trip" className={ghostIconDanger}>
+                        <Trash2 size={14} strokeWidth={2} />
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

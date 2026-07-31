@@ -3,6 +3,7 @@ import { db } from '@/db'
 import { absences, billCycles, bills, housemates, splits, payments, utilities } from '@/db/schema'
 import { computeCycleSplits, type EngineBill } from '@/lib/split/engine'
 import { deriveUsagePeriod } from '@/lib/usage-period'
+import { shapeUtilityTrends } from '@/lib/trends'
 
 export async function listHousemates() {
   return db.select().from(housemates).where(eq(housemates.isActive, true)).orderBy(housemates.id)
@@ -109,4 +110,18 @@ export async function getCycleBreakdown(cycleId: number) {
     cycle, billRows, housemates: mates, splits: estimate.splits, dues: estimate.dues,
     payments: [], frozen: false as const, estimated: true as const,
   }
+}
+
+export async function getUtilityTrends(limit = 12) {
+  const [cycles, rows] = await Promise.all([listCycles(), listBills()])
+  return shapeUtilityTrends(
+    cycles.map(c => ({ id: c.id, cycleNumber: c.cycleNumber, label: c.label })),
+    rows.map(r => ({
+      cycleId: r.bill.cycleId,
+      utilityName: r.utility.name,
+      amountCents: r.bill.amountCents,
+      status: r.bill.status,
+    })),
+    limit,
+  )
 }
