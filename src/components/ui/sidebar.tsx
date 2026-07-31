@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { LeafLogo } from '@/components/ui/leaf-logo'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, ReceiptText, Layers, CalendarDays, Settings, LogOut } from 'lucide-react'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
@@ -46,7 +45,6 @@ export function Sidebar({ signOutAction }: { signOutAction: () => Promise<void> 
           )
         })}
         <div className="mt-auto flex flex-col gap-1">
-          <ThemeToggle />
           <form action={signOutAction}>
             <button
               type="submit"

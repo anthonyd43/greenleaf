@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { cookies } from "next/headers";
+import { Bricolage_Grotesque } from "next/font/google";
 import { signOut } from "@/auth";
 import { Sidebar } from "@/components/ui/sidebar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -25,22 +20,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = (await cookies()).get("theme")?.value;
-
   async function doSignOut() {
     'use server'
     await signOut({ redirectTo: '/signin' })
   }
 
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased ${
-        theme === "light" ? "" : "dark"
-      }`}
-    >
-      <body className="antialiased">
+    <html lang="en" className={`${bricolage.variable} h-full antialiased`}>
+      <body className="font-sans antialiased">
         <div className="flex min-h-dvh">
           <Sidebar signOutAction={doSignOut} />
           <main className="min-w-0 flex-1 px-4 pb-24 pt-6 md:px-10 md:pb-10">{children}</main>
