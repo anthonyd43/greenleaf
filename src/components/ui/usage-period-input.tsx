@@ -1,17 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-
-const fieldClass = 'rounded-lg border border-line bg-card px-3 py-2 text-sm'
-const labelClass = 'text-xs text-ink-2'
+import { fieldClass, labelClass } from '@/components/ui/classes'
 
 type Mode = 'month' | 'dates'
-
-function pillClass(active: boolean): string {
-  return active
-    ? 'rounded-full px-2.5 py-0.5 text-xs font-medium text-accent bg-accent/10'
-    : 'rounded-full px-2.5 py-0.5 text-xs font-medium text-ink-2 bg-raised'
-}
 
 export function UsagePeriodInput({
   defaultMonth,
@@ -29,12 +21,14 @@ export function UsagePeriodInput({
   return (
     <div className="col-span-2 flex flex-col gap-1">
       <span className={labelClass}>Usage period</span>
-      <div className="flex gap-2">
+      <div className="inline-flex rounded-full border border-line bg-page p-0.5">
         <button
           type="button"
           onClick={() => setMode('month')}
           aria-pressed={mode === 'month'}
-          className={pillClass(mode === 'month')}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
+            mode === 'month' ? 'bg-mint text-mint-ink' : 'text-ink-2 hover:text-ink'
+          }`}
         >
           Month
         </button>
@@ -42,7 +36,9 @@ export function UsagePeriodInput({
           type="button"
           onClick={() => setMode('dates')}
           aria-pressed={mode === 'dates'}
-          className={pillClass(mode === 'dates')}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
+            mode === 'dates' ? 'bg-mint text-mint-ink' : 'text-ink-2 hover:text-ink'
+          }`}
         >
           Specific dates
         </button>
