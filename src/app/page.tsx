@@ -35,7 +35,15 @@ export default async function Dashboard() {
     )
   }
   const data = await getCycleBreakdown(currentId)
-  if (!data) return null
+  if (!data) {
+    return (
+      <Card>
+        <p className="text-ink-2">
+          No cycles yet — <Link href="/bills" className="text-accent underline">start one on the Bills page</Link>.
+        </p>
+      </Card>
+    )
+  }
 
   const { cycle, billRows, housemates, dues } = data
   const confirmed = billRows.filter(r => r.bill.status === 'confirmed')
