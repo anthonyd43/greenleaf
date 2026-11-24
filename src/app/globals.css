@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  /* The app is dark-only: tell the browser so native controls (date-picker icon,
+     select menus, number spinners, checkboxes, scrollbars) are drawn for a dark page. */
+  color-scheme: dark;
   --bg-page: #141624;
   --bg-sidebar: #10121d;
   --bg-card: #1c1f2f;

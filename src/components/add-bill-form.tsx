@@ -7,6 +7,7 @@ import { fieldClass, labelClass, pillOutline, pillSolid } from '@/components/ui/
 import { UtilityIcon } from '@/components/ui/utility-icon'
 import { UsagePeriodInput } from '@/components/ui/usage-period-input'
 import { Badge } from '@/components/ui/badge'
+import { cycleUsageDefaults } from '@/lib/cycle-month'
 
 export function AddBillForm({
   cycle,
@@ -20,6 +21,14 @@ export function AddBillForm({
   const [open, setOpen] = useState(defaultOpen)
   const [utilityId, setUtilityId] = useState(utilities[0]?.id)
   const [even, setEven] = useState(false)
+  // Bumped after each bill is added so the usage period goes back to the cycle's month.
+  const [billCount, setBillCount] = useState(0)
+  const usage = cycleUsageDefaults(cycle.label)
+
+  async function addBill(formData: FormData) {
+    await createBill(formData)
+    setBillCount(n => n + 1)
+  }
 
   if (!open) {
     return (
@@ -31,7 +40,7 @@ export function AddBillForm({
 
   return (
     <form
-      action={createBill}
+      action={addBill}
       className="rounded-[20px] border border-accent/40 bg-card p-5"
     >
       <input type="hidden" name="cycleId" value={cycle.id} />
@@ -88,7 +97,12 @@ export function AddBillForm({
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 rail:grid-cols-2">
-        <UsagePeriodInput />
+        <UsagePeriodInput
+          key={billCount}
+          defaultMonth={usage?.month}
+          defaultStart={usage?.start}
+          defaultEnd={usage?.end}
+        />
         <label className="flex flex-col gap-1">
           <span className={labelClass}>Note (optional)</span>
           <input name="notes" placeholder="e.g. includes late fee" className={fieldClass} />

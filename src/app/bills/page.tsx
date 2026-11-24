@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/page-header'
 import { IconSquare } from '@/components/ui/icon-square'
 import { AddBillForm } from '@/components/add-bill-form'
-import { fieldClass, ghostIcon, ghostIconDanger, pillSolid } from '@/components/ui/classes'
+import { MonthYearInput } from '@/components/ui/month-year-input'
+import { defaultNewCycleMonth } from '@/lib/cycle-month'
+import { ghostIcon, ghostIconDanger, labelClass, pillSolid } from '@/components/ui/classes'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +34,9 @@ export default async function BillsPage({
   const openBills = open ? (billsByCycle.get(open.id) ?? []) : []
   const openConfirmed = openBills.filter(r => r.bill.status === 'confirmed')
   const openTotal = cycleTotalCents(openBills)
+  // listCycles() is newest first.
+  const latestCycle = cycles[0]
+  const newCycleMonth = defaultNewCycleMonth(latestCycle?.label, new Date().toISOString().slice(0, 10))
   const past = cycles.filter(c => c.id !== open?.id && (billsByCycle.get(c.id)?.length ?? 0) > 0)
 
   return (
@@ -40,13 +45,13 @@ export default async function BillsPage({
 
       {!open ? (
         <Card>
-          <form action={createCycle} className="flex gap-2">
-            <input
-              name="label"
-              placeholder="New cycle label (e.g. July 2026)"
-              className={`flex-1 ${fieldClass}`}
-              required
-            />
+          <form action={createCycle} className="flex flex-wrap items-end gap-2">
+            <div className="flex min-w-[220px] flex-1 flex-col gap-1">
+              <span className={labelClass}>
+                New cycle{latestCycle ? ` · last was ${latestCycle.label}` : ''}
+              </span>
+              <MonthYearInput name="month" label="Cycle" defaultMonth={newCycleMonth} required />
+            </div>
             <button className={pillSolid}>Start cycle</button>
           </form>
         </Card>
