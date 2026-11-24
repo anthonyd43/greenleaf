@@ -4,6 +4,7 @@ import { absences, billCycles, bills, housemates, splits, payments, utilities } 
 import { computeCycleSplits, type EngineBill } from '@/lib/split/engine'
 import { deriveUsagePeriod } from '@/lib/usage-period'
 import { shapeUtilityTrends } from '@/lib/trends'
+import { cycleTotalCents } from '@/lib/cycle-total'
 
 export async function listHousemates() {
   return db.select().from(housemates).where(eq(housemates.isActive, true)).orderBy(housemates.id)
@@ -48,11 +49,13 @@ export async function listPayments(cycleId: number) {
 }
 
 export async function getCycleTotals() {
-  const cycles = await db.select().from(billCycles).orderBy(billCycles.cycleNumber)
-  const confirmed = await db.select().from(bills).where(eq(bills.status, 'confirmed'))
+  const [cycles, rows] = await Promise.all([
+    db.select().from(billCycles).orderBy(billCycles.cycleNumber),
+    listBills(),
+  ])
   return cycles.map(c => ({
     cycleId: c.id, cycleNumber: c.cycleNumber, label: c.label, status: c.status,
-    totalCents: confirmed.filter(b => b.cycleId === c.id).reduce((a, b) => a + b.amountCents, 0),
+    totalCents: cycleTotalCents(rows.filter(r => r.bill.cycleId === c.id)),
   }))
 }
 
@@ -121,6 +124,7 @@ export async function getUtilityTrends(limit = 12) {
       utilityName: r.utility.name,
       amountCents: r.bill.amountCents,
       status: r.bill.status,
+      ownerId: r.utility.ownerId,
     })),
     limit,
   )

@@ -5,6 +5,7 @@ import { formatCents } from '@/lib/money'
 import { getCycleBreakdown, getOpenCycle, getUtilityTrends, listAbsences, listCycles } from '@/lib/queries'
 import { daysLeftInMonth, labelToMonth } from '@/lib/cycle-month'
 import { listMonthDays } from '@/lib/absence-month'
+import { cycleTotalCents } from '@/lib/cycle-total'
 import { Card, CardHeader } from '@/components/ui/card'
 import { Avatar } from '@/components/ui/avatar'
 import { IconSquare } from '@/components/ui/icon-square'
@@ -47,7 +48,7 @@ export default async function Dashboard() {
 
   const { cycle, billRows, housemates, dues } = data
   const confirmed = billRows.filter(r => r.bill.status === 'confirmed')
-  const total = confirmed.reduce((a, r) => a + r.bill.amountCents, 0)
+  const total = cycleTotalCents(billRows)
 
   const myEmail = session?.user?.email?.toLowerCase()
   const me = myEmail ? housemates.find(h => h.email.toLowerCase() === myEmail) : undefined

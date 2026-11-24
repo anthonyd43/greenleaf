@@ -4,6 +4,7 @@ import { auth } from '@/auth'
 import { finalizeCycle, markVenmoRequested, reopenCycle } from '@/lib/actions/cycle'
 import { formatCents } from '@/lib/money'
 import { getCycleBreakdown } from '@/lib/queries'
+import { cycleTotalCents, isPersonalUtility } from '@/lib/cycle-total'
 import { venmoRequestLink } from '@/lib/venmo'
 import { VenmoButton } from '@/components/venmo-button'
 import { MarkPaidToggle } from '@/components/mark-paid-toggle'
@@ -23,7 +24,8 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
   if (!data) notFound()
   const { cycle, billRows, housemates, splits, dues, payments, estimated } = data
   const confirmed = billRows.filter(r => r.bill.status === 'confirmed')
-  const total = confirmed.reduce((a, r) => a + r.bill.amountCents, 0)
+  const total = cycleTotalCents(billRows)
+  const hasPersonalBills = confirmed.some(r => isPersonalUtility(r.utility))
   const duesTotal = dues.reduce((a, d) => a + d.amountDueCents, 0)
   const myEmail = session?.user?.email?.toLowerCase()
   const me = myEmail ? housemates.find(h => h.email.toLowerCase() === myEmail) : undefined
@@ -105,6 +107,7 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
         </table>
         <p className="border-t border-line px-5 py-3 text-xs text-ink-3">
           Sanity check: dues sum to {formatCents(duesTotal)} vs bills total {formatCents(total)}.
+          {hasPersonalBills && ' Personal bills are paid by their owner and are not added to the total.'}
         </p>
       </Card>
 
