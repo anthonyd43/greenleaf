@@ -7,17 +7,20 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { billCycles, bills } from '@/db/schema'
 import { parseAmountToCents } from '@/lib/money'
+import { monthToLabel } from '@/lib/cycle-month'
 import { monthToRange } from '@/lib/usage-period'
 import { requireUser } from './guard'
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('').transform(() => undefined))
+
+const monthStr = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
 
 const billSchema = z.object({
   utilityId: z.coerce.number().int().positive(),
   cycleId: z.coerce.number().int().positive(),
   amount: z.string().min(1),
   paymentDate: dateStr,
-  usageMonth: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional().or(z.literal('').transform(() => undefined)),
+  usageMonth: monthStr.optional().or(z.literal('').transform(() => undefined)),
   usageStart: dateStr,
   usageEnd: dateStr,
   usagePeriodText: z.string().optional(),
@@ -46,7 +49,8 @@ async function assertCycleOpen(cycleId: number) {
 
 export async function createCycle(formData: FormData) {
   await requireUser()
-  const label = z.string().min(1).parse(formData.get('label'))
+  // A cycle is one calendar month; its label is generated so every label parses the same way.
+  const label = monthToLabel(monthStr.parse(formData.get('month')))
   const existing = await db.select().from(billCycles)
   const next = Math.max(0, ...existing.map(c => c.cycleNumber)) + 1
   await db.insert(billCycles).values({ cycleNumber: next, label })

@@ -44,7 +44,7 @@ function monthNameToNumber(token: string): number | null {
  * Extracts the last 4-digit year in the cycle label and the month token
  * immediately adjacent to it (e.g. 'Jun–Jul 2025' -> month Jul, year 2025).
  */
-function parseCycleLabel(cycleLabel: string): { year: number; month: number } | null {
+export function parseCycleLabel(cycleLabel: string): { year: number; month: number } | null {
   const tokens = splitLabelTokens(cycleLabel)
   let yearIdx = -1
   for (let i = tokens.length - 1; i >= 0; i--) {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { fieldClass, labelClass } from '@/components/ui/classes'
+import { MonthYearInput } from '@/components/ui/month-year-input'
 
 type Mode = 'month' | 'dates'
 
@@ -10,7 +11,9 @@ export function UsagePeriodInput({
   defaultStart,
   defaultEnd,
 }: {
+  /** 'YYYY-MM' the month picker starts on. */
   defaultMonth?: string
+  /** 'YYYY-MM-DD' values the date fields start on if the user switches to specific dates. */
   defaultStart?: string
   defaultEnd?: string
 }) {
@@ -45,13 +48,7 @@ export function UsagePeriodInput({
       </div>
 
       {mode === 'month' ? (
-        <input
-          name="usageMonth"
-          type="month"
-          defaultValue={defaultMonth}
-          className={fieldClass}
-          aria-label="Usage month"
-        />
+        <MonthYearInput name="usageMonth" label="Usage" defaultMonth={defaultMonth} />
       ) : (
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1">

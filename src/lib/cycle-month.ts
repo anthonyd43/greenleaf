@@ -1,16 +1,52 @@
-const MONTHS = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
-]
+import { monthToRange, parseCycleLabel } from '@/lib/usage-period'
 
-/** '"July 2026"' or '"Jul 2026"' → '2026-07'; null when the label is not a "<Month> <Year>" string. */
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+function parseMonth(month: string): { year: number; month: number } {
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(month)
+  if (!m) throw new Error(`Invalid month: ${month}`)
+  return { year: Number(m[1]), month: Number(m[2]) }
+}
+
+/**
+ * Cycle label → 'YYYY-MM'. Accepts full or short month names ('July 2026', 'Jul 2026',
+ * 'Sept 2026'); a range like 'Jun–Jul 2025' gives its last month. null when the label has
+ * no "<month> <year>" in it.
+ */
 export function labelToMonth(label: string): string | null {
-  const m = /^([A-Za-z]+)\s+(\d{4})$/.exec(label.trim())
-  if (!m) return null
-  const name = m[1].toLowerCase()
-  const idx = MONTHS.findIndex(full => full === name || full.slice(0, 3) === name)
-  if (idx === -1) return null
-  return `${m[2]}-${String(idx + 1).padStart(2, '0')}`
+  const parsed = parseCycleLabel(label)
+  return parsed ? `${parsed.year}-${pad2(parsed.month)}` : null
+}
+
+/** 'YYYY-MM' → the label a cycle for that month gets, e.g. '2026-11' → 'Nov 2026'. */
+export function monthToLabel(month: string): string {
+  const { year, month: mo } = parseMonth(month)
+  return `${SHORT_MONTHS[mo - 1]} ${year}`
+}
+
+/** The 'YYYY-MM' month after `month`. */
+export function nextMonth(month: string): string {
+  const { year, month: mo } = parseMonth(month)
+  return mo === 12 ? `${year + 1}-01` : `${year}-${pad2(mo + 1)}`
+}
+
+/**
+ * Month a new cycle starts out as: the one after the latest cycle. Falls back to today's
+ * calendar month when there is no cycle yet or the latest label has no month in it.
+ */
+export function defaultNewCycleMonth(latestLabel: string | null | undefined, todayIso: string): string {
+  const latest = latestLabel ? labelToMonth(latestLabel) : null
+  return latest ? nextMonth(latest) : todayIso.slice(0, 7)
+}
+
+/** Usage period a new bill starts out with: the cycle's whole month. null when the label has no month. */
+export function cycleUsageDefaults(label: string): { month: string; start: string; end: string } | null {
+  const month = labelToMonth(label)
+  return month ? { month, ...monthToRange(month) } : null
 }
 
 /** Days of `month` strictly after `todayIso`; null when today is outside the month. */
