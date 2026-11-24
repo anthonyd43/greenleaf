@@ -1,15 +1,20 @@
+import { isPersonalUtility } from '@/lib/cycle-total'
+
 export type TrendCycle = { cycleId: number; cycleNumber: number; label: string }
 
 export type UtilityTrendData = {
   /** Oldest → newest, at most `limit` cycles. */
   cycles: TrendCycle[]
-  /** Utility name → cents per cycle (aligned to `cycles`, 0 when absent), plus 'All'. */
+  /**
+   * Utility name → cents per cycle (aligned to `cycles`, 0 when absent), plus 'All' —
+   * the cycle total, which leaves out personal (owner-pays) utilities.
+   */
   series: Record<string, number[]>
 }
 
 export function shapeUtilityTrends(
   cycles: { id: number; cycleNumber: number; label: string }[],
-  bills: { cycleId: number; utilityName: string; amountCents: number; status: string }[],
+  bills: { cycleId: number; utilityName: string; amountCents: number; status: string; ownerId: number | null }[],
   limit = 12,
 ): UtilityTrendData {
   const window = [...cycles]
@@ -25,7 +30,7 @@ export function shapeUtilityTrends(
     if (i === undefined) continue
     series[b.utilityName] ??= window.map(() => 0)
     series[b.utilityName][i] += b.amountCents
-    series.All[i] += b.amountCents
+    if (!isPersonalUtility(b)) series.All[i] += b.amountCents
   }
   return { cycles: window, series }
 }

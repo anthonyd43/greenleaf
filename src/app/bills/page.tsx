@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ChevronRight, Pencil, Trash2 } from 'lucide-react'
 import { createCycle, deleteBill } from '@/lib/actions/bills'
 import { formatCents } from '@/lib/money'
+import { cycleTotalCents } from '@/lib/cycle-total'
 import { getOpenCycle, listBills, listCycles, listUtilities } from '@/lib/queries'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -30,7 +31,7 @@ export default async function BillsPage({
   }
   const openBills = open ? (billsByCycle.get(open.id) ?? []) : []
   const openConfirmed = openBills.filter(r => r.bill.status === 'confirmed')
-  const openTotal = openConfirmed.reduce((a, r) => a + r.bill.amountCents, 0)
+  const openTotal = cycleTotalCents(openBills)
   const past = cycles.filter(c => c.id !== open?.id && (billsByCycle.get(c.id)?.length ?? 0) > 0)
 
   return (
@@ -125,9 +126,7 @@ export default async function BillsPage({
           <div className="divide-y divide-line border-t border-line">
             {past.map(c => {
               const cycleBills = billsByCycle.get(c.id) ?? []
-              const totalCents = cycleBills
-                .filter(r => r.bill.status === 'confirmed')
-                .reduce((a, r) => a + r.bill.amountCents, 0)
+              const totalCents = cycleTotalCents(cycleBills)
               return (
                 <Link
                   key={c.id}

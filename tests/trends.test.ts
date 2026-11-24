@@ -10,8 +10,8 @@ const cycles = [
 describe('shapeUtilityTrends', () => {
   it('orders cycles by cycleNumber ascending and aligns series', () => {
     const out = shapeUtilityTrends(cycles, [
-      { cycleId: 10, utilityName: 'Water', amountCents: 5000, status: 'confirmed' },
-      { cycleId: 12, utilityName: 'Water', amountCents: 7000, status: 'confirmed' },
+      { cycleId: 10, utilityName: 'Water', amountCents: 5000, status: 'confirmed', ownerId: null },
+      { cycleId: 12, utilityName: 'Water', amountCents: 7000, status: 'confirmed', ownerId: null },
     ])
     expect(out.cycles.map(c => c.cycleNumber)).toEqual([1, 2, 3])
     expect(out.series.Water).toEqual([5000, 0, 7000])
@@ -20,10 +20,10 @@ describe('shapeUtilityTrends', () => {
 
   it('sums multiple bills per utility per cycle and ignores drafts', () => {
     const out = shapeUtilityTrends(cycles, [
-      { cycleId: 11, utilityName: 'Gas', amountCents: 1000, status: 'confirmed' },
-      { cycleId: 11, utilityName: 'Gas', amountCents: 250, status: 'confirmed' },
-      { cycleId: 11, utilityName: 'Gas', amountCents: 9999, status: 'draft' },
-      { cycleId: 11, utilityName: 'Water', amountCents: 4000, status: 'confirmed' },
+      { cycleId: 11, utilityName: 'Gas', amountCents: 1000, status: 'confirmed', ownerId: null },
+      { cycleId: 11, utilityName: 'Gas', amountCents: 250, status: 'confirmed', ownerId: null },
+      { cycleId: 11, utilityName: 'Gas', amountCents: 9999, status: 'draft', ownerId: null },
+      { cycleId: 11, utilityName: 'Water', amountCents: 4000, status: 'confirmed', ownerId: null },
     ])
     expect(out.series.Gas).toEqual([0, 1250, 0])
     expect(out.series.All).toEqual([0, 5250, 0])
@@ -32,11 +32,22 @@ describe('shapeUtilityTrends', () => {
   it('keeps only the last `limit` cycles', () => {
     const out = shapeUtilityTrends(
       cycles,
-      [{ cycleId: 10, utilityName: 'Water', amountCents: 5000, status: 'confirmed' }],
+      [{ cycleId: 10, utilityName: 'Water', amountCents: 5000, status: 'confirmed', ownerId: null }],
       2,
     )
     expect(out.cycles.map(c => c.cycleNumber)).toEqual([2, 3])
     expect(out.series.All).toEqual([0, 0])
     expect(out.series.Water).toBeUndefined()
+  })
+
+  it("leaves personal charging out of 'All' but keeps its own series", () => {
+    const out = shapeUtilityTrends(cycles, [
+      { cycleId: 10, utilityName: 'Electricity', amountCents: 30184, status: 'confirmed', ownerId: null },
+      { cycleId: 10, utilityName: 'EV Charging A', amountCents: 6300, status: 'confirmed', ownerId: 4 },
+      { cycleId: 11, utilityName: 'EV Charging A', amountCents: 700, status: 'confirmed', ownerId: 4 },
+    ])
+    expect(out.series['EV Charging A']).toEqual([6300, 700, 0])
+    expect(out.series.Electricity).toEqual([30184, 0, 0])
+    expect(out.series.All).toEqual([30184, 0, 0])
   })
 })
