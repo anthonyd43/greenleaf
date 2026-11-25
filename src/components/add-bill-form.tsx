@@ -8,14 +8,19 @@ import { UtilityIcon } from '@/components/ui/utility-icon'
 import { UsagePeriodInput } from '@/components/ui/usage-period-input'
 import { Badge } from '@/components/ui/badge'
 import { cycleUsageDefaults } from '@/lib/cycle-month'
+import type { LastAmount } from '@/lib/last-bill'
+import { formatCents } from '@/lib/money'
 
 export function AddBillForm({
   cycle,
   utilities,
+  lastAmounts,
   defaultOpen,
 }: {
   cycle: { id: number; label: string }
   utilities: { id: number; name: string }[]
+  /** What each utility came to the last time it was billed, keyed by utility id. */
+  lastAmounts: Record<number, LastAmount>
   defaultOpen: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -24,6 +29,7 @@ export function AddBillForm({
   // Bumped after each bill is added so the usage period goes back to the cycle's month.
   const [billCount, setBillCount] = useState(0)
   const usage = cycleUsageDefaults(cycle.label)
+  const last = utilityId != null ? lastAmounts[utilityId] : undefined
 
   async function addBill(formData: FormData) {
     await createBill(formData)
@@ -86,8 +92,14 @@ export function AddBillForm({
               required
               placeholder="0.00"
               inputMode="decimal"
-              className="w-full bg-transparent text-[22px] font-semibold tabular-nums text-ink outline-none placeholder:text-ink-3"
+              className="w-full min-w-0 bg-transparent text-[22px] font-semibold tabular-nums text-ink outline-none placeholder:text-ink-3"
             />
+            {last && (
+              <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-accent">
+                last {formatCents(last.amountCents)}
+                <span className="text-ink-3"> · {last.cycleLabel}</span>
+              </span>
+            )}
           </div>
         </label>
         <label className="flex flex-col gap-1">
