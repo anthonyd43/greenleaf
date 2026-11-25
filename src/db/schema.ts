@@ -21,6 +21,11 @@ export const utilities = pgTable('utilities', {
   deductFromUtilityId: integer('deduct_from_utility_id'),
   portalUrl: text('portal_url'),
   notes: text('notes'),
+  // A utility with a fixed amount is billed automatically: when a cycle is started and
+  // intervalMonths have passed since its last bill, a bill for this amount is added.
+  // null = the amount varies and bills are entered by hand.
+  fixedAmountCents: integer('fixed_amount_cents'),
+  intervalMonths: integer('interval_months').notNull().default(1),
 })
 
 export const billCycles = pgTable('bill_cycles', {

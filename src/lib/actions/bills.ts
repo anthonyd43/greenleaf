@@ -5,9 +5,10 @@ import { redirect } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { billCycles, bills } from '@/db/schema'
+import { billCycles, bills, utilities } from '@/db/schema'
 import { parseAmountToCents } from '@/lib/money'
 import { monthToLabel } from '@/lib/cycle-month'
+import { FIXED_BILL_NOTE, fixedBillsDue } from '@/lib/fixed-bills'
 import { monthToRange } from '@/lib/usage-period'
 import { requireUser } from './guard'
 
@@ -50,11 +51,26 @@ async function assertCycleOpen(cycleId: number) {
 export async function createCycle(formData: FormData) {
   await requireUser()
   // A cycle is one calendar month; its label is generated so every label parses the same way.
-  const label = monthToLabel(monthStr.parse(formData.get('month')))
-  const existing = await db.select().from(billCycles)
+  const month = monthStr.parse(formData.get('month'))
+  const label = monthToLabel(month)
+  const [existing, allUtilities, allBills] = await Promise.all([
+    db.select().from(billCycles),
+    db.select().from(utilities),
+    db.select({ utilityId: bills.utilityId, cycleId: bills.cycleId }).from(bills),
+  ])
   const next = Math.max(0, ...existing.map(c => c.cycleNumber)) + 1
-  await db.insert(billCycles).values({ cycleNumber: next, label })
-  revalidatePath('/')
+  // Utilities with a fixed amount get their bill added here, so it does not have to be typed in.
+  const due = fixedBillsDue(allUtilities, allBills, existing, { cycleNumber: next, month })
+  await db.transaction(async tx => {
+    const [cycle] = await tx.insert(billCycles).values({ cycleNumber: next, label }).returning({ id: billCycles.id })
+    if (due.length > 0) {
+      await tx.insert(bills).values(due.map(b => ({
+        cycleId: cycle.id, utilityId: b.utilityId, amountCents: b.amountCents,
+        usageStart: b.usageStart, usageEnd: b.usageEnd, notes: FIXED_BILL_NOTE,
+      })))
+    }
+  })
+  revalidatePath('/bills'); revalidatePath('/')
 }
 
 export async function createBill(formData: FormData) {
