@@ -1,15 +1,19 @@
-/** Largest-remainder allocation: splits amountCents by weights, exact-sum, ties to lower index. */
+/**
+ * Splits amountCents by weights, rounding every share up to a whole cent.
+ * Equal weights always get equal shares: when the amount does not divide, everyone
+ * pays the extra cent rather than some housemates owing a cent more than others
+ * for the same share. The shares can therefore add up to slightly more than the
+ * amount, by less than one cent per person.
+ */
 export function allocate(amountCents: number, weights: number[]): number[] {
   const totalWeight = weights.reduce((a, b) => a + b, 0)
   if (totalWeight === 0) return weights.map(() => 0)
-  const raw = weights.map(w => (amountCents * w) / totalWeight)
-  const parts = raw.map(Math.floor)
-  const remainder = amountCents - parts.reduce((a, b) => a + b, 0)
-  const order = raw
-    .map((r, i) => ({ i, frac: r - Math.floor(r) }))
-    .sort((a, b) => b.frac - a.frac || a.i - b.i)
-  for (let k = 0; k < remainder; k++) parts[order[k].i] += 1
-  return parts
+  return weights.map(w => {
+    // Integer maths, so a share that divides exactly is never nudged up by float error.
+    const scaled = amountCents * w
+    const whole = Math.floor(scaled / totalWeight)
+    return scaled % totalWeight === 0 ? whole : whole + 1
+  })
 }
 
 export type EngineHousemate = { id: number }
@@ -50,9 +54,8 @@ function presentDays(hid: number, start: string, end: string, absences: EngineAb
 }
 
 /**
- * Single source of truth for the person-day-vs-even weight decision: the weight
- * vector a non-owner bill splits by, plus the daysPresent to report per person.
- * Both computeBillSplit and computeCycleSplits' bill-grouping defer to this.
+ * The person-day-vs-even weight decision: the weight vector a non-owner bill
+ * splits by, plus the daysPresent to report per person.
  */
 function billWeights(
   bill: EngineBill, housemates: EngineHousemate[], absences: EngineAbsence[],
@@ -90,19 +93,13 @@ export type CycleResult = {
  * by their owner AND deducted from the largest bill of their target utility
  * before that bill is split — the metered total includes the personal usage.
  *
- * Non-owner bills that share an identical weight vector (e.g. every plain 'even'
- * bill, regardless of utility) are pooled for rounding purposes: each bill still
- * sums to its own effective amount, but the leftover cents from largest-remainder
- * division are handed out across the whole group so no housemate's cycle-wide
- * total drifts more than a cent from a single cycle-wide split would have given
- * them. Splitting every bill independently would otherwise let the same low-index
- * housemate collect the rounding remainder bill after bill.
+ * Each shared bill is split on its own and every share is rounded up (see
+ * allocate), so the dues can come to a few cents more than the bills: less than
+ * one cent over per housemate per shared bill.
  */
 export function computeCycleSplits(
   bills: EngineBill[], housemates: EngineHousemate[], absences: EngineAbsence[],
 ): CycleResult {
-  const n = housemates.length
-
   const deduction = new Map<number, number>() // billId → cents to subtract
   for (const owned of bills.filter(b => b.ownerId != null && b.deductFromUtilityId != null)) {
     const targets = bills.filter(b => b.utilityId === owned.deductFromUtilityId && b.ownerId == null)
@@ -110,57 +107,18 @@ export function computeCycleSplits(
     const largest = targets.reduce((a, b) => (b.amountCents > a.amountCents ? b : a))
     deduction.set(largest.id, (deduction.get(largest.id) ?? 0) + owned.amountCents)
   }
-  const effectiveAmount = (b: EngineBill) => b.amountCents - (deduction.get(b.id) ?? 0)
 
   const splits: BillSplit[] = []
 
-  // Owner bills: entire (undeducted) amount to the owner — no rounding to share out.
+  // Owner bills: entire (undeducted) amount to the owner.
   for (const b of bills.filter(b => b.ownerId != null)) {
     splits.push(...computeBillSplit(b, housemates, absences))
   }
 
-  // Non-owner bills: group by identical weight vector so rounding remainder is pooled fairly.
-  const groups = new Map<string, { bills: EngineBill[]; weights: number[]; daysPresent: (number | null)[] }>()
+  // Shared bills: split what is left after any personal usage is taken out.
   for (const b of bills.filter(b => b.ownerId == null)) {
-    const { weights, daysPresent } = billWeights(b, housemates, absences)
-    const key = JSON.stringify(weights)
-    const g = groups.get(key)
-    if (g) g.bills.push(b)
-    else groups.set(key, { bills: [b], weights, daysPresent })
-  }
-
-  for (const { bills: groupBills, weights, daysPresent } of groups.values()) {
-    const totalWeight = weights.reduce((a, w) => a + w, 0)
-    const amounts = groupBills.map(effectiveAmount)
-    const targets = allocate(amounts.reduce((a, c) => a + c, 0), weights) // cycle-wide ideal per person
-
-    const bases = amounts.map(amt => {
-      const raw = weights.map(w => (totalWeight === 0 ? 0 : (amt * w) / totalWeight))
-      return raw.map(Math.floor)
-    })
-    const remainders = amounts.map((amt, gi) => amt - bases[gi].reduce((a, v) => a + v, 0))
-    const floorTotal = new Array(n).fill(0) as number[]
-    for (const base of bases) base.forEach((v, j) => { floorTotal[j] += v })
-    const extra = targets.map((t, j) => t - floorTotal[j]) // leftover cents owed to each person, mutated below
-
-    const bumps = groupBills.map(() => new Array(n).fill(0) as number[])
-    remainders.forEach((need, gi) => {
-      const order = extra.map((e, j) => ({ j, e })).sort((a, b) => b.e - a.e || a.j - b.j)
-      for (let k = 0; k < need; k++) {
-        const { j } = order[k]
-        bumps[gi][j] += 1
-        extra[j] -= 1
-      }
-    })
-
-    groupBills.forEach((b, gi) => {
-      housemates.forEach((h, j) => {
-        splits.push({
-          billId: b.id, housemateId: h.id, daysPresent: daysPresent[j],
-          amountCents: bases[gi][j] + bumps[gi][j],
-        })
-      })
-    })
+    const effective = { ...b, amountCents: b.amountCents - (deduction.get(b.id) ?? 0) }
+    splits.push(...computeBillSplit(effective, housemates, absences))
   }
 
   const dues = housemates.map(h => ({

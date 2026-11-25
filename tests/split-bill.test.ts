@@ -12,9 +12,10 @@ test('inclusiveDays counts both endpoints', () => {
   expect(inclusiveDays('2025-09-01', '2025-09-01')).toBe(1)
 })
 
-test('even split, no absences', () => {
+test('even split, no absences: rounded up so everyone owes the same', () => {
+  // $65.30 / 4 = $16.325 → $16.33 each
   const s = computeBillSplit(bill({ amountCents: 6530 }), H, [])
-  expect(s.map(x => x.amountCents)).toEqual([1633, 1633, 1632, 1632])
+  expect(s.map(x => x.amountCents)).toEqual([1633, 1633, 1633, 1633])
   expect(s.map(x => x.daysPresent)).toEqual([null, null, null, null])
 })
 
@@ -24,8 +25,9 @@ test('owner bill goes entirely to owner', () => {
 })
 
 // Reference fixture: electricity $295.22, usage 08/12–09/08 (28 days),
-// housemates 1&2 away 6 days → person-days 22/22/28/28 → $64.95/$64.95/$82.66/$82.66
-test('person-day proration matches reference vacation electricity', () => {
+// housemates 1&2 away 6 days → person-days 22/22/28/28 → exact shares
+// $64.9484/$64.9484/$82.6616/$82.6616, each rounded up.
+test('person-day proration: vacation electricity', () => {
   const s = computeBillSplit(
     bill({ amountCents: 29522, splitMethod: 'person_day', usageStart: '2025-08-12', usageEnd: '2025-09-08' }),
     H,
@@ -35,11 +37,12 @@ test('person-day proration matches reference vacation electricity', () => {
     ],
   )
   expect(s.map(x => x.daysPresent)).toEqual([22, 22, 28, 28])
-  expect(s.map(x => x.amountCents)).toEqual([6495, 6495, 8266, 8266])
+  expect(s.map(x => x.amountCents)).toEqual([6495, 6495, 8267, 8267])
 })
 
-// Reference fixture: gas $15.19, 31-day period, days 10/16/31/31 → $1.73/$2.76/$5.35/$5.35
-test('person-day proration matches reference vacation gas', () => {
+// Reference fixture: gas $15.19, 31-day period, days 10/16/31/31 → exact shares
+// $1.7261/$2.7618/$5.3510/$5.3510, each rounded up.
+test('person-day proration: vacation gas', () => {
   const s = computeBillSplit(
     bill({ amountCents: 1519, splitMethod: 'person_day', usageStart: '2025-08-05', usageEnd: '2025-09-04' }),
     H,
@@ -49,7 +52,7 @@ test('person-day proration matches reference vacation gas', () => {
     ],
   )
   expect(s.map(x => x.daysPresent)).toEqual([10, 16, 31, 31])
-  expect(s.map(x => x.amountCents)).toEqual([173, 276, 535, 535])
+  expect(s.map(x => x.amountCents)).toEqual([173, 277, 536, 536])
 })
 
 test('person-day with nobody absent falls back to even', () => {

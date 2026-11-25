@@ -37,7 +37,8 @@ describe('cycleTotalCents', () => {
 
   // Charging is carved out of the electricity bill before it is split, so what
   // the housemates owe between them already equals the total without charging.
-  it('matches the sum of dues when charging is deducted from electricity', () => {
+  // Shares are rounded up, so dues can be a few odd cents over the total, never under.
+  it('matches the sum of dues, bar odd cents, when charging is deducted from electricity', () => {
     const ELEC = 2
     const bills: (EngineBill & { status: string })[] = [
       { id: 1, utilityId: 1, amountCents: 4349, ownerId: null, deductFromUtilityId: null },
@@ -51,6 +52,6 @@ describe('cycleTotalCents', () => {
     const total = cycleTotalCents(bills.map(b => ({ bill: b, utility: b })))
 
     expect(total).toBe(4349 + 30184)
-    expect(duesSum).toBe(total)
+    expect(duesSum - total).toBe(3) // gas: $43.49 / 4 = $10.8725 → $10.88 each
   })
 })

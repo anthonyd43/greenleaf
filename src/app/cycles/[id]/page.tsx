@@ -27,6 +27,8 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
   const total = cycleTotalCents(billRows)
   const hasPersonalBills = confirmed.some(r => isPersonalUtility(r.utility))
   const duesTotal = dues.reduce((a, d) => a + d.amountDueCents, 0)
+  // Shares are rounded up, so dues can come to a few cents more than the bills.
+  const roundedUp = duesTotal - total
   const myEmail = session?.user?.email?.toLowerCase()
   const me = myEmail ? housemates.find(h => h.email.toLowerCase() === myEmail) : undefined
   const isOpen = cycle.status === 'open'
@@ -107,6 +109,8 @@ export default async function CyclePage({ params }: { params: Promise<{ id: stri
         </table>
         <p className="border-t border-line px-5 py-3 text-xs text-ink-3">
           Sanity check: dues sum to {formatCents(duesTotal)} vs bills total {formatCents(total)}.
+          {roundedUp > 0 &&
+            ` The ${roundedUp < 100 ? `${roundedUp}¢` : formatCents(roundedUp)} difference is rounding: each share is rounded up to the cent so equal shares stay equal.`}
           {hasPersonalBills && ' Personal bills are paid by their owner and are not added to the total.'}
         </p>
       </Card>
