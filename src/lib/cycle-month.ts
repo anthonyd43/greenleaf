@@ -34,6 +34,20 @@ export function nextMonth(month: string): string {
   return mo === 12 ? `${year + 1}-01` : `${year}-${pad2(mo + 1)}`
 }
 
+/** 'YYYY-MM' moved by `delta` months (negative goes back). */
+export function addMonths(month: string, delta: number): string {
+  const { year, month: mo } = parseMonth(month)
+  const index = year * 12 + (mo - 1) + delta
+  return `${Math.floor(index / 12)}-${pad2((index % 12) + 1)}`
+}
+
+/** Whole months from `from` to `to` (both 'YYYY-MM'); negative when `to` is the earlier one. */
+export function monthsBetween(from: string, to: string): number {
+  const a = parseMonth(from)
+  const b = parseMonth(to)
+  return (b.year - a.year) * 12 + (b.month - a.month)
+}
+
 /**
  * Month a new cycle starts out as: the one after the latest cycle. Falls back to today's
  * calendar month when there is no cycle yet or the latest label has no month in it.

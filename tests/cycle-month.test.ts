@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  cycleUsageDefaults, daysLeftInMonth, defaultNewCycleMonth, labelToMonth, monthToLabel, nextMonth,
+  addMonths, cycleUsageDefaults, daysLeftInMonth, defaultNewCycleMonth, labelToMonth, monthsBetween, monthToLabel,
+  nextMonth,
 } from '@/lib/cycle-month'
 
 describe('labelToMonth', () => {
@@ -51,6 +52,24 @@ describe('nextMonth', () => {
   })
   it('rolls over the year after December', () => {
     expect(nextMonth('2026-12')).toBe('2027-01')
+  })
+})
+
+describe('addMonths', () => {
+  it('moves forward and back across year ends', () => {
+    expect(addMonths('2026-11', 0)).toBe('2026-11')
+    expect(addMonths('2026-11', 2)).toBe('2027-01')
+    expect(addMonths('2027-01', -2)).toBe('2026-11')
+    expect(addMonths('2026-12', -12)).toBe('2025-12')
+  })
+})
+
+describe('monthsBetween', () => {
+  it('counts whole months, negative when going back', () => {
+    expect(monthsBetween('2026-10', '2026-11')).toBe(1)
+    expect(monthsBetween('2026-10', '2026-10')).toBe(0)
+    expect(monthsBetween('2026-11', '2027-01')).toBe(2)
+    expect(monthsBetween('2027-01', '2026-11')).toBe(-2)
   })
 })
 

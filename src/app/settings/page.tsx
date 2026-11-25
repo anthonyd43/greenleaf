@@ -1,5 +1,7 @@
 import { ExternalLink } from 'lucide-react'
-import { updateHousemate } from '@/lib/actions/settings'
+import { updateHousemate, updateUtility } from '@/lib/actions/settings'
+import { MAX_INTERVAL_MONTHS } from '@/lib/fixed-bills'
+import { formatCents } from '@/lib/money'
 import { listHousemates, listUtilities } from '@/lib/queries'
 import { Card } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
@@ -58,49 +60,106 @@ export default async function SettingsPage() {
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-[15px] font-semibold text-ink">Utilities</h2>
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.08em] text-ink-2">
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Split</th>
-                <th className="px-5 py-3 font-medium">Portal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {utils.map(u => (
-                <tr key={u.id}>
-                  <td className="px-5 py-3">
-                    <span className="flex items-center gap-2.5">
+        <div>
+          <h2 className="text-[15px] font-semibold text-ink">Utilities</h2>
+          <p className="text-[13px] text-ink-2">
+            Give a utility a fixed amount and its bill is added for you when a cycle starts.
+          </p>
+        </div>
+        <div className="grid gap-3 rail:grid-cols-2">
+          {utils.map(u => {
+            const owner = u.ownerId != null ? mates.find(m => m.id === u.ownerId) : undefined
+            return (
+              <Card key={u.id}>
+                <form action={updateUtility} className="flex flex-col gap-3">
+                  <input type="hidden" name="id" value={u.id} />
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2.5">
                       <span className="text-accent"><UtilityIcon name={u.name} size={16} /></span>
-                      <span className="font-medium text-ink">{u.name}</span>
+                      <span className="truncate text-sm font-semibold text-ink">{u.name}</span>
                     </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex rounded-full border border-line px-2.5 py-0.5 text-xs font-medium text-ink-2">
-                      {u.ownerId ? 'personal — owner pays' : u.splitMethod === 'even' ? 'even' : 'person-day'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    {u.portalUrl ? (
+                    {u.portalUrl && (
                       <a
                         href={u.portalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[13px] text-accent transition-colors duration-150 hover:text-[#c2d8a4]"
+                        className="inline-flex shrink-0 items-center gap-1.5 text-[13px] text-accent transition-colors duration-150 hover:text-[#c2d8a4]"
                       >
                         portal <ExternalLink size={13} />
                       </a>
-                    ) : (
-                      <span className="text-ink-3">—</span>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+                  </div>
+                  <label className="flex flex-col gap-1">
+                    <span className={labelClass}>Name</span>
+                    <input name="name" defaultValue={u.name} className={fieldClass} required />
+                  </label>
+                  {u.ownerId != null ? (
+                    <div className="flex flex-col gap-1">
+                      <span className={labelClass}>Split</span>
+                      <input type="hidden" name="splitMethod" value={u.splitMethod} />
+                      <span className="text-sm text-ink-2">
+                        Personal — {owner ? owner.name.split(' ')[0] : 'its owner'} pays all of it
+                      </span>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col gap-1">
+                      <span className={labelClass}>Split</span>
+                      <select name="splitMethod" defaultValue={u.splitMethod} className={fieldClass}>
+                        <option value="even">Evenly</option>
+                        <option value="person_day">By days at home</option>
+                      </select>
+                    </label>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1">
+                      <span className={labelClass}>Fixed amount</span>
+                      <div className={`flex items-baseline gap-1 ${fieldClass}`}>
+                        <span className="text-ink-2">$</span>
+                        <input
+                          name="fixedAmount"
+                          defaultValue={u.fixedAmountCents != null ? (u.fixedAmountCents / 100).toFixed(2) : ''}
+                          placeholder="varies"
+                          inputMode="decimal"
+                          className="w-full min-w-0 bg-transparent tabular-nums text-ink outline-none placeholder:text-ink-3"
+                        />
+                      </div>
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className={labelClass}>Billed</span>
+                      <select name="intervalMonths" defaultValue={u.intervalMonths} className={fieldClass}>
+                        {Array.from({ length: MAX_INTERVAL_MONTHS }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>
+                            {n === 1 ? 'Every month' : `Every ${n} months`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <p className="text-xs text-ink-3">
+                    {u.fixedAmountCents != null
+                      ? `${formatCents(u.fixedAmountCents)} is added when a cycle starts, ${
+                          u.intervalMonths === 1 ? 'every month' : `every ${u.intervalMonths} months`
+                        }.`
+                      : 'Leave the amount blank for a bill that changes each time; you enter those yourself.'}
+                  </p>
+                  <label className="flex flex-col gap-1">
+                    <span className={labelClass}>Portal link</span>
+                    <input
+                      name="portalUrl"
+                      type="url"
+                      defaultValue={u.portalUrl ?? ''}
+                      placeholder="https://"
+                      className={fieldClass}
+                    />
+                  </label>
+                  <button className="self-start rounded-full border border-accent/50 px-4 py-1.5 text-[13px] font-medium text-accent transition-colors duration-150 hover:bg-accent/10">
+                    Save
+                  </button>
+                </form>
+              </Card>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
