@@ -11,6 +11,7 @@ import { IconSquare } from '@/components/ui/icon-square'
 import { AddBillForm } from '@/components/add-bill-form'
 import { MonthYearInput } from '@/components/ui/month-year-input'
 import { defaultNewCycleMonth } from '@/lib/cycle-month'
+import { lastAmountsByUtility } from '@/lib/last-bill'
 import { ghostIcon, ghostIconDanger, labelClass, pillSolid } from '@/components/ui/classes'
 
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,7 @@ export default async function BillsPage({
         <AddBillForm
           cycle={{ id: open.id, label: open.label }}
           utilities={utilities.map(u => ({ id: u.id, name: u.name }))}
+          lastAmounts={lastAmountsByUtility(rows.map(r => r.bill), cycles, open.id)}
           defaultOpen={add === '1'}
         />
       )}
